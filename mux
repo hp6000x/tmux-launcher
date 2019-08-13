@@ -11,7 +11,7 @@
 #then reboot for changes to take effect
 #
 #defaults to 4-pane session, can also open 2-pane session with log watcher and master window
-alias ponies='while true; do clear; (fortune | ponysay | lolcat); read -sn 1 -t 30 dummy; done'
+alias ponies='while true; do clear; (fortune | ponysay); read -sn 1 -t 8 dummy; done' # everypony loves a pony
 doInstall () {
  if which apt; then
    if (sudo apt install "$1"); then
