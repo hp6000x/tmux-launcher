@@ -1,0 +1,130 @@
+#!/bin/bash
+#Installs tmux, htop, glances and iftop (debian based systems only) and starts a custom 4-pane session
+#to remove the password requirement for iftop
+#first type
+#  which iftop
+#to get the location of iftop
+#  type sudo visudo and hit ENTER, then add the line (without the #)
+#your username here	ALL=(ALL) NOPASSWD:full path to iftop here
+#example
+#bill	ALL=(ALL) NOPASSWD:/usr/sbin/iftop
+#then reboot for changes to take effect
+#
+#defaults to 4-pane session, can also open 2-pane session with log watcher and master window
+
+doInstall () {
+ if which apt; then
+   if (sudo apt install "$1"); then
+     return 0
+   else
+     return 1
+   fi
+ elif which pacman; then
+   if (sudo pacman -Syyyuu "$1"); then
+     return 0
+   else
+     return 1
+   fi
+ fi
+}
+
+doFail () {
+  echo "Failed. You need to install the $1 package yourself, sorry. Exiting"
+  exit $2	
+}
+
+if ! (which tmux > /dev/null); then
+  echo "Installing tmux..."
+  if ! (doInstall tmux); then
+    doFail "tmux" 1
+  fi
+fi
+
+#fname="/etc/sudoers.d/iftop$USER"
+#if [[ ! -e "$fname" ]]; then
+#  echo "Setting Nopassword option for iftop..."
+#  echo "$USER ALL=(ALL) NOPASSWD:$(which iftop)" | sudo tee "$fname" > /dev/null
+#  if [[ -e "$fname" ]]; then
+#    echo "Done. You will need to relog for changes to take effect. Hit ENTER to continue"
+#    read dummy
+#    unset dummy
+#  else
+#    echo "Failed. You will need to click on the bottom-left pane and enter your password every time you run mux"
+#    exit 1
+#  fi
+#fi
+
+if ! (which iftop > /dev/null); then
+  echo "Installing iftop..."
+  if ! (doInstall iftop); then
+    doFail "iftop" 2
+  fi
+fi
+
+if [[ -z "$1" ]] || [[ "$1" = "4" ]] || [[ "$1" = "-g" ]]; then #default to 4-pane
+  if [[ "$1" = "4" ]]; then
+    shift
+  fi
+
+  if ! (tmux attach -t 4pane > /dev/null); then
+    tmux new-session -d -s 4pane
+
+    tmux set -g mouse on
+
+    tmux split-window -h -t 0
+    tmux split-window -v -t 0
+    tmux split-window -v -b -p 25 -t 2
+    if [[ "$1" = "-g" ]]; then
+      if ! (which glances > /dev/null); then
+        echo "Installing glances..."
+        if ! (doInstall glances > /dev/null); then
+          doFail "glances" 3
+        fi
+      fi
+      tmux send-keys -t 0 "glances; exit" Enter
+    else
+      if ! (which htop > /dev/null); then
+        echo "Installing htop..."
+        if ! (doInstall htop > /dev/null); then
+          doFail "htop" 4
+        fi
+      fi
+      tmux send-keys -t 0 "htop; exit" Enter
+    fi
+    if ! (which iftop > /dev/null); then
+      if ! (doInstall iftop > /dev/null); then
+        doFail "iftop" 5
+      fi
+    fi
+    tmux send-keys -t 1 "sudo iftop -o 40s; exit" Enter
+    tmux send-keys -t 2 "dmesg --follow; exit" Enter
+    tmux send-keys -t 3 "showconnections; exit" Enter
+    tmux select-pane -t 3
+    tmux attach -t 4pane
+  fi
+
+elif [[ "$1" = "2" ]]; then #2-pane chosen
+
+  if ! (tmux attach -t 2pane > /dev/null); then
+    tmux new-session -d -s 2pane
+    tmux set -g mouse on
+    tmux split-window -h -p 50 -t 0
+    tmux split-window -h -p 70 -t 0
+    #tmux split-window -h -p 50 -t 0
+    #tmux send-keys -t 3 "exit" Enter
+    tmux send-keys -t 2 "exit" Enter
+    tmux send-keys -t 0 "watchlogtails; exit" Enter
+#    tmux send-keys -t 1 "clear && neofetch" Enter
+#    tmux send-keys -t 1 "watch -t -n 5 tail -n 40 /var/log/backup2.log" Enter
+    tmux send-keys -t 2 "ponies" Enter
+    tmux select-pane -t 1
+    tmux attach -t 2pane
+  fi
+
+else
+
+  echo "Format is:-"
+  echo "	$0 [4] [-g]	: Open 4-pane tmux session. -g chooses glances instead of htop"
+  echo "	$0 2		: Open 2-pane tmux session"
+  
+fi 
