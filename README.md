@@ -1,5 +1,5 @@
 # tmux-launcher
-Launches tmux in a 4-quadrant split or 30/70 vertical split configuration.
+Launches tmux in a 4-quadrant split or a slightly-less-than 1/3:2/3 vertical split configuration.
 
 I wrote this specifically to configure tmux in ways that I use it regularly, but it can also make you look like a badass
 terminal hacker.
