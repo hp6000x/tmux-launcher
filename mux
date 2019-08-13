@@ -105,7 +105,7 @@ elif [[ "$1" = "2" ]]; then #2-pane chosen
     tmux send-keys -t 0 "watchlogtails; exit" Enter
 #    tmux send-keys -t 1 "clear && neofetch" Enter
 #    tmux send-keys -t 1 "watch -t -n 5 tail -n 40 /var/log/backup2.log" Enter
-    tmux send-keys -t 2 "ponies" Enter
+    tmux send-keys -t 1 "ponies" Enter
     tmux select-pane -t 1
     tmux attach -t 2pane
   fi
