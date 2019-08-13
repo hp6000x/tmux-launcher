@@ -11,7 +11,7 @@
 #then reboot for changes to take effect
 #
 #defaults to 4-pane session, can also open 2-pane session with log watcher and master window
-
+alias ponies='while true; do clear; (fortune | ponysay | lolcat); read -sn 1 -t 30 dummy; done'
 doInstall () {
  if which apt; then
    if (sudo apt install "$1"); then
@@ -20,7 +20,7 @@ doInstall () {
      return 1
    fi
  elif which pacman; then
-   if (sudo pacman -Syyyuu "$1"); then
+   if (sudo pacman -Syu "$1"); then
      return 0
    else
      return 1
@@ -33,11 +33,24 @@ doFail () {
   exit $2	
 }
 
-if ! (which tmux > /dev/null); then
-  echo "Installing tmux..."
-  if ! (doInstall tmux); then
-    doFail "tmux" 1
+for a in tmux fortune ponysay lolcat glances htop iftop; do
+  if ! (which $a > /dev/null); then
+    echo "Installing $a..."
+    if ! (doInstall $a); then
+      doFail "$a" 1
+    fi
   fi
+done
+
+if ! (which watchlogtails > /dev/null); then
+  fldr=$(dirname $0)
+  echo "Getting viewlogtails and watchlogtails from github"
+  pushd "$fldr" > /dev/null
+  for a in viewlogtails watchlogtails; do
+    wget -q "https://github.com/hp6000x/watchlogtails/raw/master/$a"
+    chmod a+x $a
+  done
+  popd > /dev/null
 fi
 
 #fname="/etc/sudoers.d/iftop$USER"
@@ -54,13 +67,6 @@ fi
 #  fi
 #fi
 
-if ! (which iftop > /dev/null); then
-  echo "Installing iftop..."
-  if ! (doInstall iftop); then
-    doFail "iftop" 2
-  fi
-fi
-
 if [[ -z "$1" ]] || [[ "$1" = "4" ]] || [[ "$1" = "-g" ]]; then #default to 4-pane
   if [[ "$1" = "4" ]]; then
     shift
@@ -75,26 +81,9 @@ if [[ -z "$1" ]] || [[ "$1" = "4" ]] || [[ "$1" = "-g" ]]; then #default to 4-pa
     tmux split-window -v -t 0
     tmux split-window -v -b -p 25 -t 2
     if [[ "$1" = "-g" ]]; then
-      if ! (which glances > /dev/null); then
-        echo "Installing glances..."
-        if ! (doInstall glances > /dev/null); then
-          doFail "glances" 3
-        fi
-      fi
       tmux send-keys -t 0 "glances; exit" Enter
     else
-      if ! (which htop > /dev/null); then
-        echo "Installing htop..."
-        if ! (doInstall htop > /dev/null); then
-          doFail "htop" 4
-        fi
-      fi
       tmux send-keys -t 0 "htop; exit" Enter
-    fi
-    if ! (which iftop > /dev/null); then
-      if ! (doInstall iftop > /dev/null); then
-        doFail "iftop" 5
-      fi
     fi
     tmux send-keys -t 1 "sudo iftop -o 40s; exit" Enter
     tmux send-keys -t 2 "dmesg --follow; exit" Enter
