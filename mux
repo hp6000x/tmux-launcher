@@ -1,17 +1,19 @@
 #!/bin/bash
-#Installs tmux, htop, glances and iftop (debian based systems only) and starts a custom 4-pane session
-#to remove the password requirement for iftop
+#Installs tmux, htop, glances, netstat and iftop (debian based systems only) and starts a custom 4-pane session
+#to remove the password requirement for iftop and netstat
 #first type
-#  which iftop
-#to get the location of iftop
+#  which iftop netstat
+#to get the locations of iftop and netstat
 #  type sudo visudo and hit ENTER, then add the line (without the #)
-#your username here	ALL=(ALL) NOPASSWD:full path to iftop here
+#your username here	ALL=(ALL) NOPASSWD:full path to iftop here,path to netstat here
 #example
-#bill	ALL=(ALL) NOPASSWD:/usr/sbin/iftop
+#bill	ALL=(ALL) NOPASSWD:/usr/sbin/iftop,/bin/netstat
 #then reboot for changes to take effect
 #
 #defaults to 4-pane session, can also open 2-pane session with log watcher and master window
-alias ponies='while true; do clear; (fortune | ponysay); read -sn 1 -t 8 dummy; done' # everypony loves a pony
+
+ponies='while true; do clear; (fortune | ponysay); read -sn 1 -t 8 dummy; done' # everypony loves a pony
+
 doInstall () {
  if which apt; then
    if (sudo apt install "$1"); then
@@ -33,7 +35,7 @@ doFail () {
   exit $2	
 }
 
-for a in tmux fortune ponysay lolcat glances htop iftop; do
+for a in tmux fortune ponysay lolcat glances htop iftop netstat; do
   if ! (which $a > /dev/null); then
     echo "Installing $a..."
     if ! (doInstall $a); then
@@ -52,20 +54,6 @@ if ! (which watchlogtails > /dev/null); then
   done
   popd > /dev/null
 fi
-
-#fname="/etc/sudoers.d/iftop$USER"
-#if [[ ! -e "$fname" ]]; then
-#  echo "Setting Nopassword option for iftop..."
-#  echo "$USER ALL=(ALL) NOPASSWD:$(which iftop)" | sudo tee "$fname" > /dev/null
-#  if [[ -e "$fname" ]]; then
-#    echo "Done. You will need to relog for changes to take effect. Hit ENTER to continue"
-#    read dummy
-#    unset dummy
-#  else
-#    echo "Failed. You will need to click on the bottom-left pane and enter your password every time you run mux"
-#    exit 1
-#  fi
-#fi
 
 if [[ -z "$1" ]] || [[ "$1" = "4" ]] || [[ "$1" = "-g" ]]; then #default to 4-pane
   if [[ "$1" = "4" ]]; then
@@ -87,7 +75,7 @@ if [[ -z "$1" ]] || [[ "$1" = "4" ]] || [[ "$1" = "-g" ]]; then #default to 4-pa
     fi
     tmux send-keys -t 1 "sudo iftop -o 40s; exit" Enter
     tmux send-keys -t 2 "dmesg --follow; exit" Enter
-    tmux send-keys -t 3 "showconnections; exit" Enter
+    tmux send-keys -t 3 "watch -n 5 sudo netstat --inet -ap; exit" Enter
     tmux select-pane -t 3
     tmux attach -t 4pane
   fi
@@ -99,13 +87,9 @@ elif [[ "$1" = "2" ]]; then #2-pane chosen
     tmux set -g mouse on
     tmux split-window -h -p 50 -t 0
     tmux split-window -h -p 70 -t 0
-    #tmux split-window -h -p 50 -t 0
-    #tmux send-keys -t 3 "exit" Enter
     tmux send-keys -t 2 "exit" Enter
     tmux send-keys -t 0 "watchlogtails; exit" Enter
-#    tmux send-keys -t 1 "clear && neofetch" Enter
-#    tmux send-keys -t 1 "watch -t -n 5 tail -n 40 /var/log/backup2.log" Enter
-    tmux send-keys -t 1 "ponies" Enter
+    tmux send-keys -t 1 "$ponies" Enter
     tmux select-pane -t 1
     tmux attach -t 2pane
   fi
